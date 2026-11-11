@@ -1,0 +1,325 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Describe the Picture!</title>
+    <style>
+        :root {
+            --primary: #4A90E2;
+            --secondary: #FFB347;
+            --success: #2ECC71;
+            --bg: #F4F7F6;
+            --card-bg: #FFFFFF;
+            --text: #333333;
+        }
+
+        body {
+            font-family: 'Comic Sans MS', 'Chalkboard SE', sans-serif;
+            background-color: var(--bg);
+            color: var(--text);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            margin: 0;
+        }
+
+        .container {
+            background-color: var(--card-bg);
+            border-radius: 24px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+            padding: 40px 30px;
+            width: 100%;
+            max-width: 500px;
+            text-align: center;
+            border: 4px solid var(--primary);
+        }
+
+        h1 {
+            color: var(--primary);
+            margin-top: 0;
+            font-size: 28px;
+        }
+
+        .scene-container {
+            font-size: 100px;
+            margin: 20px 0;
+            background-color: #E8F4F8;
+            border-radius: 20px;
+            padding: 30px;
+            display: inline-block;
+            box-shadow: inset 0 4px 10px rgba(0,0,0,0.05);
+        }
+
+        .input-area {
+            position: relative;
+            margin-bottom: 20px;
+        }
+
+        textarea {
+            width: 90%;
+            height: 80px;
+            padding: 15px;
+            padding-right: 60px; /* Space for mic button */
+            border-radius: 12px;
+            border: 2px solid #ccc;
+            font-size: 18px;
+            font-family: inherit;
+            resize: none;
+            outline: none;
+            transition: border-color 0.3s;
+        }
+
+        textarea:focus {
+            border-color: var(--primary);
+        }
+
+        .mic-btn {
+            position: absolute;
+            right: 15px;
+            top: 50%;
+            transform: translateY(-50%);
+            background-color: #FF5E5E;
+            color: white;
+            border: none;
+            border-radius: 50%;
+            width: 45px;
+            height: 45px;
+            font-size: 20px;
+            cursor: pointer;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+            transition: all 0.3s;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .mic-btn:hover {
+            transform: translateY(-50%) scale(1.1);
+            background-color: #FF3B3B;
+        }
+
+        .mic-btn.listening {
+            animation: pulse 1.5s infinite;
+            background-color: var(--success);
+        }
+
+        @keyframes pulse {
+            0% { box-shadow: 0 0 0 0 rgba(46, 204, 113, 0.7); }
+            70% { box-shadow: 0 0 0 15px rgba(46, 204, 113, 0); }
+            100% { box-shadow: 0 0 0 0 rgba(46, 204, 113, 0); }
+        }
+
+        .controls {
+            display: flex;
+            gap: 10px;
+            justify-content: center;
+            margin-top: 20px;
+        }
+
+        button.action-btn {
+            background-color: var(--primary);
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            font-size: 18px;
+            border-radius: 12px;
+            cursor: pointer;
+            font-family: inherit;
+            font-weight: bold;
+            transition: transform 0.2s, background-color 0.2s;
+            box-shadow: 0 4px 0 #3273BC;
+        }
+
+        button.action-btn:active {
+            transform: translateY(4px);
+            box-shadow: 0 0 0 #3273BC;
+        }
+
+        button.action-btn.secondary {
+            background-color: var(--secondary);
+            box-shadow: 0 4px 0 #E69A29;
+        }
+
+        .feedback {
+            margin-top: 25px;
+            font-size: 20px;
+            font-weight: bold;
+            min-height: 30px;
+        }
+
+        .success-text {
+            color: var(--success);
+            animation: bounceIn 0.5s;
+        }
+
+        .hint-text {
+            color: #FF6B6B;
+        }
+
+        @keyframes bounceIn {
+            0% { transform: scale(0.3); opacity: 0; }
+            50% { transform: scale(1.05); opacity: 1; }
+            70% { transform: scale(0.9); }
+            100% { transform: scale(1); }
+        }
+
+    </style>
+</head>
+<body>
+
+    <div class="container">
+        <h1>Describe the Picture! 🗣️✏️</h1>
+        
+        <div class="scene-container" id="sceneDisplay">
+            <!-- Emoji scene will be injected here -->
+        </div>
+
+        <div class="input-area">
+            <textarea id="userInput" placeholder="Type or say what is happening..."></textarea>
+            <button class="mic-btn" id="micBtn" title="Click to speak">🎤</button>
+        </div>
+
+        <div class="controls">
+            <button class="action-btn" id="checkBtn">Check!</button>
+            <button class="action-btn secondary" id="nextBtn">Next Picture ➔</button>
+        </div>
+
+        <div class="feedback" id="feedbackArea"></div>
+    </div>
+
+    <script>
+        const scenes = [
+            { emoji: '🐕⚽', keywords: ['dog', 'play', 'ball', 'running'], hint: 'What is the dog playing with?' },
+            { emoji: '👧📖', keywords: ['girl', 'read', 'book', 'reading'], hint: 'What is the girl doing?' },
+            { emoji: '👦🍎', keywords: ['boy', 'eat', 'apple', 'eating'], hint: 'What is the boy eating?' },
+            { emoji: '🐈💤', keywords: ['cat', 'sleep', 'sleeping', 'bed'], hint: 'What is the cat doing?' },
+            { emoji: '🐦🌳', keywords: ['bird', 'tree', 'sing', 'flying'], hint: 'Where is the bird?' }
+        ];
+
+        let currentSceneIndex = 0;
+        let isListening = false;
+
+        // DOM Elements
+        const sceneDisplay = document.getElementById('sceneDisplay');
+        const userInput = document.getElementById('userInput');
+        const micBtn = document.getElementById('micBtn');
+        const checkBtn = document.getElementById('checkBtn');
+        const nextBtn = document.getElementById('nextBtn');
+        const feedbackArea = document.getElementById('feedbackArea');
+
+        // Web Speech API Setup
+        const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+        let recognition;
+
+        if (SpeechRecognition) {
+            recognition = new SpeechRecognition();
+            recognition.continuous = false;
+            recognition.lang = 'en-US';
+            recognition.interimResults = false;
+
+            recognition.onstart = () => {
+                isListening = true;
+                micBtn.classList.add('listening');
+                userInput.placeholder = "Listening...";
+                feedbackArea.innerHTML = "";
+            };
+
+            recognition.onresult = (event) => {
+                const transcript = event.results[0][0].transcript;
+                userInput.value = transcript;
+            };
+
+            recognition.onerror = (event) => {
+                console.error("Speech Recognition Error:", event.error);
+                feedbackArea.innerHTML = `<span class="hint-text">Mic error. Please try typing!</span>`;
+            };
+
+            recognition.onend = () => {
+                isListening = false;
+                micBtn.classList.remove('listening');
+                userInput.placeholder = "Type or say what is happening...";
+                // Automatically check the answer after speaking
+                if(userInput.value.trim() !== "") {
+                    checkAnswer();
+                }
+            };
+        } else {
+            micBtn.style.display = 'none'; // Hide mic if not supported
+            console.warn("Speech Recognition API not supported in this browser.");
+        }
+
+        // Functions
+        function loadScene() {
+            const scene = scenes[currentSceneIndex];
+            sceneDisplay.textContent = scene.emoji;
+            userInput.value = '';
+            feedbackArea.innerHTML = '';
+            userInput.focus();
+        }
+
+        function toggleMic() {
+            if (!recognition) return;
+            if (isListening) {
+                recognition.stop();
+            } else {
+                userInput.value = '';
+                recognition.start();
+            }
+        }
+
+        function checkAnswer() {
+            const text = userInput.value.toLowerCase();
+            if (!text.trim()) {
+                feedbackArea.innerHTML = `<span class="hint-text">Please say or type something first!</span>`;
+                return;
+            }
+
+            const currentKeywords = scenes[currentSceneIndex].keywords;
+            
+            // Check if at least one meaningful keyword is present
+            const matchedKeywords = currentKeywords.filter(kw => text.includes(kw));
+
+            if (matchedKeywords.length > 0) {
+                feedbackArea.innerHTML = `<span class="success-text">🎉 Great job! You described it well!</span>`;
+                confettiEffect();
+            } else {
+                const hint = scenes[currentSceneIndex].hint;
+                feedbackArea.innerHTML = `<span class="hint-text">Almost! Hint: ${hint}</span>`;
+            }
+        }
+
+        function nextScene() {
+            currentSceneIndex = (currentSceneIndex + 1) % scenes.length;
+            loadScene();
+        }
+
+        // Very basic text-based confetti for positive reinforcement
+        function confettiEffect() {
+            const confettiArr = ['🌟', '✨', '🎉', '👍', '🎈'];
+            let text = sceneDisplay.textContent;
+            sceneDisplay.textContent = confettiArr[Math.floor(Math.random() * confettiArr.length)];
+            setTimeout(() => {
+                sceneDisplay.textContent = text;
+            }, 800);
+        }
+
+        // Event Listeners
+        micBtn.addEventListener('click', toggleMic);
+        checkBtn.addEventListener('click', checkAnswer);
+        nextBtn.addEventListener('click', nextScene);
+        
+        // Enter key to check
+        userInput.addEventListener('keypress', function (e) {
+            if (e.key === 'Enter') {
+                e.preventDefault();
+                checkAnswer();
+            }
+        });
+
+        // Init
+        loadScene();
+    </script>
+</body>
+</html>
